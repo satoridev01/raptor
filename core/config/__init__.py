@@ -520,6 +520,10 @@ class RaptorConfig:
         # prlimit, sh, mount, mkdir) is handled separately by resolving
         # to absolute paths at setup time (see core/sandbox/probes.py).
         "PATH",
+        # Satori fork shim (satoridev01/raptor): survives the env scrub so
+        # the re-exec'd netns/proxy child sees it and skips engaging the
+        # redundant egress sandbox inside Satori. See core/sandbox/state.py.
+        "RAPTOR_SATORI_NO_EGRESS_SANDBOX",
         # Identity
         "USER", "LOGNAME", "HOSTNAME",
         # Home and session — many tools need HOME for ~/.config; stripping

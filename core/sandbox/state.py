@@ -125,6 +125,26 @@ _cli_sandbox_profile = None     # str profile name when --sandbox <name> passed
 # rule as the flags above; the gate that fills it fails closed
 # (core.sandbox.disable_consent.resolve_disable_consent).
 _cli_sandbox_disable_consent: str | None = None
+
+# --- Satori fork shim (satoridev01/raptor) ------------------------------
+# RAPTOR runs inside a Satori job container that ALREADY isolates egress.
+# Its own egress proxy / netns sandbox fail-closes there (the scan target
+# is never in the CONNECT allowlist) and 403s every request. The normal
+# --no-sandbox path sets these globals in-process only, so it never
+# reaches the re-exec'd netns/proxy child (a fresh process with a
+# get_safe_env()-scrubbed environment), which re-reads this module and
+# re-engages. Disable deterministically from a dedicated, allowlisted env
+# var that only WE set on the job: honoured in EVERY process that imports
+# this module (parent, re-exec, scrubbed child). The "never from env"
+# rule above guards against a malicious .envrc / target repo; a REMOTE
+# web-scan target cannot set container env, so that threat does not apply.
+import os as _os
+
+if _os.environ.get("RAPTOR_SATORI_NO_EGRESS_SANDBOX") == "1":
+    _cli_sandbox_disabled = True
+    _cli_sandbox_profile = "none"
+    _cli_sandbox_disable_consent = "satori-env"
+# ------------------------------------------------------------------------
 # Audit flags — orthogonal to profile. `--audit` engages audit mode on
 # the active profile (proxy log-and-allow + SCMP_ACT_TRACE + tracer);
 # `--verbose` (only with --audit) flips the tracer from filtered to
